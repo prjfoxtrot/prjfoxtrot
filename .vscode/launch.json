@@ -1,0 +1,26 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run Foxtrot Extension",
+      "type": "extensionHost",
+      "request": "launch",
+
+      // This runs the copy of VS Code that’s currently on your PATH
+      "runtimeExecutable": "${execPath}",
+
+      // Tell VS Code to load *this* folder as the extension under test
+      "args": [
+        "--extensionDevelopmentPath=${workspaceFolder}"
+      ],
+
+      // JavaScript emitted by tsc
+      "outFiles": [
+        "${workspaceFolder}/out/**/*.js"
+      ],
+
+      // Compile TS → JS (incremental) before each launch
+      "preLaunchTask": "npm: watch"
+    }
+  ]
+}

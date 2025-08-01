@@ -1,0 +1,8 @@
+[part]
+active_fpga         = "devices/amd/artix7/XC7A100TCSG324"
+device              = "XC7A100TCSG324"
+manufacturer        = "amd"
+pin_definitions     = "devices/amd/artix7/XC7A100TCSG324/pinout.json"
+fabric_params       = "fabric.json"
+cfg_start_byte      = 0x156
+cfg_end_byte        = 0x3a58b9

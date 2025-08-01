@@ -1,0 +1,54 @@
+###############################################################################
+# .vscodeignore — files and folders that will NOT be packed into the .vsix   #
+# Strategy:                                                                   #
+#   1. Blanket-exclude everything we know is never needed at runtime.         #
+#   2. Explicitly add back the compiled output, media assets, and runtime     #
+#      node-modules that must ship inside the VSIX.                           #
+###############################################################################
+
+# ───────────────────────── 1 · Editor / test scaffolding ─────────────────────
+.vscode/**
+.vscode-test/**
+
+# ──────────────────────── 2 · Source files (compile-time only) ───────────────
+src/**
+**/*.ts
+**/*.map
+**/tsconfig.json
+**/.eslintrc.json
+
+# ─────────────────────── 3 · Build / CI artefacts we don’t ship ──────────────
+node_modules/**            # (re-add needed runtime deps below)
+coverage/**
+dist/**
+
+# ─────────────────────── 4 · Repo meta files ────────────────────────────────
+.gitignore
+.yarnrc
+vsc-extension-quickstart.md
+
+###############################################################################
+# Add back everything that **must** be present in the packaged extension      #
+###############################################################################
+
+# — compiled JavaScript, webview assets, default workspace templates —
+!out/**
+!media/**
+!default-workspace/**
+
+# — bundled Python wheels (Foxtrot plugins) —
+!plugins-bundled/**/*.whl
+
+# — runtime Node.js dependencies (devDependencies are auto-pruned by vsce) —
+!node_modules/zustand/**          # state management (v 4.5.2)
+!node_modules/adm-zip/**          # zip handling
+!node_modules/fs-extra/**         # filesystem utils
+!node_modules/ini/**              # INI parsing
+!node_modules/@iarna/toml/**      # TOML parsing
+!node_modules/sql.js/**           # in-browser SQLite
+!node_modules/toml/**             # fallback TOML parser
+
+###############################################################################
+# Final guard: if anything under src/ slipped back in, drop it again.         #
+###############################################################################
+src/**

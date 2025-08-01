@@ -1,0 +1,8 @@
+[project]
+active_fuzzer       = "fuzzers/1-generic/1-lc/1-lut/generic-lc-lut-1-cell_mask/script/generic-lc-lut-1-cell_mask.py"
+plugin              = "quartus_ii90"
+working_directory   = "."
+db_path             = "bitstreams.db"
+tcl_executable      = "/opt/altera/90/quartus/bin/quartus_sh.exe"
+use_wine            = true
+wine_executable     = "/usr/bin/wine"

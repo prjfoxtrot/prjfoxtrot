@@ -1,0 +1,8 @@
+[project]
+active_fuzzer       = "fuzzers/1-generic/1-lc/1-lut/generic-lc-lut-1-cell_mask/script/generic-lc-lut-1-cell_mask.py"
+plugin              = "quartus_ii90"
+working_directory   = "."
+db_path             = "bitstreams.db"
+tcl_executable      = "/opt/Xilinx/Vivado/2024.2/bin/vivado"
+use_wine            = false
+wine_executable     = "/usr/bin/wine"
