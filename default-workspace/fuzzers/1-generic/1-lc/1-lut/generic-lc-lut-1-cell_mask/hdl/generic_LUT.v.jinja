@@ -1,0 +1,17 @@
+// ============================================================================
+//  generic_LUT.v   –  Tiny K-input LUT model               (Verilog-2001)
+// ============================================================================
+module LUT #(
+    parameter integer K    = {{ params.K | default(1) }},
+    parameter [2**K-1:0] INIT = {{ params.INIT | default("16'b0001_0110_0110_1000") }}
+) (
+    input  [K-1:0] A,
+    output         Out
+);
+
+    (* keep *) reg Out_reg;          // keeps the register in the net-list
+    reg [2**K-1:0] init_reg = INIT;
+
+    always @* Out_reg = init_reg[A];
+    assign Out = Out_reg;
+endmodule

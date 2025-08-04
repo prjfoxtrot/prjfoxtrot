@@ -1,0 +1,61 @@
+name: Build VSIX & attach to Release
+
+on:
+  push:
+    tags: ["prjfoxtrot-v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # ──────────────────────────── Checkout source ────────────────────────────
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # ──────────────────────── Install Node & restore cache ───────────────────
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      # ─────────────────────── Install project dependencies ────────────────────
+      - name: Install JS/TS dependencies
+        run: npm ci
+
+      # ─────────────────────────── Install VSCE globally ───────────────────────
+      - name: Install vsce (VS Code Extension CLI)
+        run: npm install -g @vscode/vsce
+
+      # ─────────────────────────── Compile TypeScript ──────────────────────────
+      - name: Compile TypeScript
+        run: npm run compile
+
+      # ─────────────────────────── Package the extension ───────────────────────
+      - name: Package VSIX
+        run: |
+          npm run vscode:package
+          mkdir -p out
+          mv foxtrot-*.vsix out/
+
+      # ───────────────────────── Create “latest” alias ─────────────────────────
+      - name: Create 'latest' VSIX alias
+        run: |
+          VSIX=$(ls -t out/foxtrot-*.vsix | head -n 1)
+          cp "$VSIX" out/foxtrot-latest.vsix
+
+      # ─────────────────────── Attach artefacts to release ─────────────────────
+      - name: Upload VSIX to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name:     ${{ github.ref_name }}
+          draft:    false
+          files: |
+            out/foxtrot-*.vsix
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

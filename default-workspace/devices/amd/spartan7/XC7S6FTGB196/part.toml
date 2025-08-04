@@ -1,0 +1,8 @@
+[part]
+active_fpga         = "devices/amd/versal/xcve2002-sbva484-1LHP-i-L"
+device              = "XC7S6FTGB196"
+manufacturer        = "amd"
+pin_definitions     = "devices/amd/spartan7/XC7S6FTGB196/pinout.json"
+fabric_params       = "fabric.json"
+cfg_start_byte      = 0x154
+cfg_end_byte        = 0x83117

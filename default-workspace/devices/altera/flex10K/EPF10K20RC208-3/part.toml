@@ -1,0 +1,8 @@
+[part]
+active_fpga         = "devices/altera/flex10K/EPF10K20RC208-3"
+device              = "EPF10K20RC208-3"
+manufacturer        = "altera"
+pin_definitions     = "devices/altera/flex10K/EPF10K20RC208-3/pinout.json"
+fabric_params       = "fabric.json"
+cfg_start_byte      = 0xA8
+cfg_end_byte        = 0x6E3F
