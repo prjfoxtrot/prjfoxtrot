@@ -1,0 +1,80 @@
+{
+    "root": true,
+  
+    "env": { "es2022": true, "node": true },
+  
+    "parser": "@typescript-eslint/parser",
+    "parserOptions": {
+      "ecmaVersion": 2022,
+      "sourceType": "module",
+      "project": "./tsconfig.json"
+    },
+  
+    "plugins": [
+      "prettier",
+      "import",
+      "promise",
+      "jsdoc",
+      "@typescript-eslint"
+    ],
+  
+    "extends": [
+      "eslint:recommended",
+      "plugin:@typescript-eslint/recommended",
+      "plugin:import/recommended",
+      "plugin:promise/recommended",
+      "plugin:jsdoc/recommended",
+      "plugin:prettier/recommended"
+    ],
+  
+    /* ------------------------------------------------------------------ */
+    /*  👉 settings belong here, not in package.json                       */
+    /* ------------------------------------------------------------------ */
+    "settings": {
+      "import/resolver": {
+        "typescript": {
+          "project": "./tsconfig.json",
+          "alwaysTryTypes": true
+        },
+        "node": {
+          "extensions": [".js", ".jsx", ".ts", ".tsx", ".d.ts"]
+        }
+      },
+      "import/core-modules": ["vscode"]     // silence “unresolved” for VS Code API
+    },
+  
+    "rules": {
+      /* ---- kept from original ---- */
+      "@typescript-eslint/naming-convention": [
+        "warn",
+        { "selector": "import", "format": ["camelCase", "PascalCase"] }
+      ],
+      "curly": "warn",
+      "eqeqeq": "warn",
+      "no-throw-literal": "warn",
+      "semi": ["warn", "always"],           // <-- use core rule, v8 dropped the TS one
+  
+      /* ---- formatter + imports ---- */
+      "prettier/prettier": "error",
+      "import/order": [
+        "warn",
+        {
+          "alphabetize": { "order": "asc", "caseInsensitive": true },
+          "newlines-between": "always",
+          "groups": ["builtin", "external", "parent", "sibling", "index"]
+        }
+      ],
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }
+      ],
+  
+      /* optional noise reduction */
+      "@typescript-eslint/no-explicit-any": "warn",
+      "jsdoc/require-param": "off",
+      "jsdoc/require-returns": "off"
+    },
+  
+    "ignorePatterns": ["out", "dist", "**/*.d.ts"]
+  }
+  

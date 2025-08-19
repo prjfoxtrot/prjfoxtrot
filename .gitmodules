@@ -1,0 +1,4 @@
+[submodule "default-workspace/projects/bitlearn/0-template/data/raw"]
+	path = default-workspace/projects/bitlearn/0-template/data/raw
+	url = https://huggingface.co/datasets/prjfoxtrot/prjfoxtrot-datasets
+	update = none

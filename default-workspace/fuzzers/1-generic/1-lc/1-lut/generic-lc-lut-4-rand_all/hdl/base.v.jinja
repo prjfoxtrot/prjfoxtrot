@@ -1,0 +1,44 @@
+// ============================================================================
+//  base.v            –   Top-level Foxtrot wrapper  (pure Verilog-2001)
+//  ----------------------------------------------------------------------------
+//  Parameters
+//  ----------
+//  N, K           : size and width of the LUT chain
+//  CHUNK_LUTS     : #LUTs per initialisation chunk  (≤ 256 → <1 Mbit)
+//  INIT_CHUNK_*   : flattened truth-tables for each chunk
+//  IO_PINS_WIDTH  : derived helper, matches first-layer fan-in
+// ============================================================================
+module top_level #(
+    parameter integer N          = {{ params.N }},
+    parameter integer K          = {{ params.K }},
+    parameter integer CHUNK_LUTS = {{ params.CHUNK_LUTS }},
+{% for chunk in params.INIT_CHUNKS -%}
+    // Chunk {{ loop.index0 }}
+    parameter [{{ chunk.split("'")[0] }}-1:0] INIT_CHUNK_{{ loop.index0 }} = {{ chunk }}{% if not loop.last %},{% endif %}
+{% endfor %}
+    , // ----------------------------------------------------------
+    parameter integer IO_PINS_WIDTH = (N == 1) ? K :
+                                      (N == 2) ? (2*K) :
+                                      (N == 3) ? (3*K) :
+                                      (N == 4) ? (4*K) : (K*K)
+) (
+    input  [IO_PINS_WIDTH-1:0] io_pins,
+    output                     chain_output
+);
+
+    wire chain_output_wire;
+
+    LUTChain #(
+        .N          (N),
+        .K          (K),
+        .CHUNK_LUTS (CHUNK_LUTS),
+{% for _ in params.INIT_CHUNKS -%}
+        .INIT_CHUNK_{{ loop.index0 }} (INIT_CHUNK_{{ loop.index0 }}){% if not loop.last %},{% endif %}
+{% endfor %}
+    ) u_chain (
+        .io_pins      (io_pins),
+        .chain_output (chain_output_wire)
+    );
+
+    assign chain_output = chain_output_wire;
+endmodule

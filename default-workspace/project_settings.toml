@@ -1,0 +1,5 @@
+[project]
+active_part = "parts/amd/artix7/XC7A100TCSG324"
+active_fuzzer = "fuzzers/1-generic/1-lc/1-lut/generic-lc-lut-4-rand_all/script/generic-lc-lut-4-rand_all.py"
+db_path = "bitstreams.db"
+active_eda = "edas/vivado/2024"

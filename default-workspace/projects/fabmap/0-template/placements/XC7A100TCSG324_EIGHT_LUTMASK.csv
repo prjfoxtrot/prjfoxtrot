@@ -1,0 +1,9 @@
+Cell Name,LOC,BEL,INIT
+u_chain/g_chunk_0[0].lut_i/Out_reg_inferred_i_1,SLICE_X0Y94,SLICEL.A6LUT,32'h69969669
+u_chain/g_chunk_0[1].lut_i/Out_reg_inferred_i_1,SLICE_X0Y84,SLICEL.A6LUT,32'h69969669
+u_chain/g_chunk_0[2].lut_i/Out_reg_inferred_i_1,SLICE_X0Y81,SLICEL.A6LUT,32'h69969669
+u_chain/g_chunk_0[3].lut_i/Out_reg_inferred_i_1,SLICE_X0Y81,SLICEL.B6LUT,32'h69969669
+u_chain/g_chunk_0[4].lut_i/Out_reg_inferred_i_1,SLICE_X0Y76,SLICEL.A6LUT,32'h69969669
+u_chain/g_chunk_0[5].lut_i/Out_reg_inferred_i_1,SLICE_X0Y84,SLICEL.B6LUT,32'h69969669
+u_chain/g_chunk_0[6].lut_i/Out_reg_inferred_i_1,SLICE_X0Y84,SLICEL.C6LUT,32'h69969669
+u_chain/g_chunk_0[7].lut_i/Out_reg_inferred_i_1,SLICE_X0Y84,SLICEL.D6LUT,32'h69969669

@@ -1,0 +1,182 @@
+{
+  "name": "foxtrot",
+  "displayName": "Foxtrot",
+  "description": "FPGA reverse-engineering toolchain.",
+  "icon": "media/foxtrot.png",
+  "version": "0.1.0",
+  "preview": true,
+  "publisher": "prjfoxtrot",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/prjfoxtrot/prjfoxtrot.git"
+  },
+  "bugs": {
+    "url": "https://github.com/prjfoxtrot/prjfoxtrot/issues"
+  },
+  "homepage": "https://github.com/prjfoxtrot/prjfoxtrot#readme",
+  "engines": {
+    "vscode": ">=1.101.0"
+  },
+  "extensionDependencies": [
+    "ms-python.python",
+    "ms-toolsai.jupyter"
+  ],
+  "categories": [
+    "Programming Languages",
+    "Visualization"
+  ],
+  "extensionKind": [
+    "ui",
+    "workspace"
+  ],
+  "enableProposedApi": false,
+  "activationEvents": [
+    "onView:foxtrot-welcome",
+    "onView:foxtrot.bitgen.panel",
+    "onCommand:foxtrot.createWorkspace",
+    "onCommand:foxtrot.openWorkspace",
+    "onCommand:foxtrot.runActiveFuzzer",
+    "onCommand:foxtrot.reinstallPackages",
+    "onCommand:foxtrot.view.switch"
+  ],
+  "main": "./out/extension.js",
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "Foxtrot only reads files in the current workspace."
+    }
+  },
+  "contributes": {
+    "configuration": {
+      "title": "Foxtrot",
+      "properties": {
+        "foxtrot.pythonPath": {
+          "type": "string",
+          "default": "python",
+          "description": "Python interpreter used to launch foxtrot_core"
+        },
+        "foxtrot.activeEDA": {
+          "type": "string",
+          "scope": "resource",
+          "default": "",
+          "description": "(managed) Last selected EDA profile (e.g. edas/quartus/ii90)"
+        },
+        "foxtrot.activeFuzzer": {
+          "type": "string",
+          "scope": "resource",
+          "default": "",
+          "description": "(managed) Last selected fuzzer"
+        },
+        "foxtrot.activePart": {
+          "type": "string",
+          "scope": "resource",
+          "default": "",
+          "description": "(managed) Last selected FPGA part (e.g. parts/amd/artix7/XC7A100TCSG324)"
+        },
+        "foxtrot.installSource": {
+          "type": "string",
+          "enum": ["ask", "github", "bundled"],
+          "default": "ask",
+          "description": "Where to install Foxtrot wheels from: ask each time, GitHub latest release, or the extension’s plugins-bundled directory."
+        },
+        "foxtrot.enablePackagePicker": {
+          "type": "boolean",
+          "default": true,
+          "description": "When installing from GitHub, show a multi-select list of foxtrot-* packages. Disable to install all discovered packages automatically (foxtrot-core installs first)."
+        },
+        "foxtrot.useNvidiaIndexForGpu": {
+          "type": "boolean",
+          "default": false,
+          "description": "When installing foxtrot-core with [gpu] extras, add --extra-index-url for NVIDIA wheels. Only enable if your network allows access to pypi.nvidia.com."
+        },
+        "foxtrot.nvidiaExtraIndexUrl": {
+          "type": "string",
+          "default": "https://pypi.nvidia.com",
+          "description": "NVIDIA Python package index to use for RAPIDS/TensorFlow CUDA wheels."
+        }
+      }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        { "id": "foxtrot", "title": "Foxtrot", "icon": "media/foxtrot.svg" }
+      ]
+    },
+    "views": {
+      "foxtrot": [
+        { "id": "foxtrot-welcome", "name": "Welcome", "type": "webview", "when": "workspaceFolderCount == 0 || !foxtrot.isInitialised" },
+        { "id": "foxtrot.bitgen.panel", "name": "BitGen", "type": "webview", "when": "foxtrot.isInitialised && viewPhase == bitgen" },
+        { "id": "foxtrot.bitmap.explorer", "name": "BitMap", "when": "foxtrot.isInitialised && viewPhase == bitmap" },
+        { "id": "foxtrot.bitmap.panel", "name": "BitMap Details", "type": "webview", "when": "foxtrot.isInitialised && viewPhase == bitmap" },
+        { "id": "foxtrot.fabmap.explorer", "name": "FabMAP", "when": "foxtrot.isInitialised && viewPhase == fabmap" },
+        { "id": "foxtrot.bitlearn.explorer", "name": "BitLearn", "when": "foxtrot.isInitialised && viewPhase == bitlearn" },
+        { "id": "foxtrot.netrec.explorer", "name": "NetREC", "when": "foxtrot.isInitialised && viewPhase == netrec" }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "foxtrot.bitgen.panel",
+        "contents": "### Foxtrot\n\n* [**Create new workspace**](command:foxtrot.createWorkspace)\n* [**Open existing workspace**](command:foxtrot.openWorkspace)",
+        "when": "workspaceFolderCount == 0 || !foxtrot.isInitialised"
+      }
+    ],
+    "commands": [
+      { "command": "foxtrot.createWorkspace", "title": "Foxtrot: New Workspace", "category": "Foxtrot" },
+      { "command": "foxtrot.openWorkspace", "title": "Foxtrot: Open Workspace…", "category": "Foxtrot" },
+      { "command": "foxtrot.runActiveFuzzer", "title": "Foxtrot: Run Active Fuzzer", "category": "Foxtrot" },
+      { "command": "foxtrot.view.switch", "title": "Foxtrot: Switch Phase", "category": "Foxtrot" },
+      { "command": "foxtrot.reinstallPackages", "title": "Foxtrot: Reinstall Packages", "category": "Foxtrot" }
+    ]
+  },
+  "scripts": {
+    "clean": "rimraf out foxtrot-*.vsix",
+    "compile": "tsc -p ./",
+    "typecheck": "tsc -p . --noEmit",
+    "bundle": "node esbuild.mjs",
+    "bundle:web": "cpx \"src/domains/**/web/**/*\" out/domains",
+    "build": "npm run typecheck && npm run bundle && npm run bundle:web",
+    "watch": "node esbuild.mjs --watch",
+    "vscode:prepublish": "npm run build",
+    "vscode:package": "vsce package",
+    "lint": "eslint --ext .ts src",
+    "lint:fix": "npm run lint -- --fix",
+    "format": "prettier --write \"{src,test}/**/*.{ts,tsx,js,json,md}\"",
+    "prepublishOnly": "npm run lint && npm run format && npm run build && vsce ls",
+    "test": "npm run lint && npm run typecheck"
+  },
+  "devDependencies": {
+    "@types/adm-zip": "^0.5.7",
+    "@types/fs-extra": "^11.0.4",
+    "@types/iarna__toml": "^2.0.5",
+    "@types/ini": "^4.1.1",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "^18.19.121",
+    "@types/vscode": "^1.101.0",
+    "@typescript-eslint/eslint-plugin": "^8.38.0",
+    "@typescript-eslint/parser": "^8.38.0",
+    "@vscode/test-cli": "^0.0.9",
+    "@vscode/test-electron": "^2.3.9",
+    "@vscode/vsce": "^3.6.0",
+    "cpx2": "^8.0.0",
+    "esbuild": "^0.25.9",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-import-resolver-typescript": "^4.4.4",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-jsdoc": "^52.0.0",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-prettier": "^5.5.3",
+    "eslint-plugin-promise": "^7.2.1",
+    "prettier": "^3.6.2",
+    "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "@iarna/toml": "^2.2.5",
+    "adm-zip": "^0.5.10",
+    "fs-extra": "^11.3.0",
+    "ini": "^4.1.2",
+    "sql.js": "^1.13.0",
+    "toml": "^3.0.0",
+    "zustand": "4.5.2"
+  }
+}

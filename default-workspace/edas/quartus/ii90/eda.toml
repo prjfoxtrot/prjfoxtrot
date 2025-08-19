@@ -1,0 +1,5 @@
+[eda]
+plugin          = "quartus_ii90"
+tcl_executable  = "/opt/altera/90/quartus/bin/quartus_sh.exe"
+use_wine        = true
+wine_executable = "/usr/bin/wine"
