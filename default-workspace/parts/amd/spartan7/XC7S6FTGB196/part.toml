@@ -1,0 +1,7 @@
+[part]
+name            = "XC7S6FTGB196"
+vendor          = "amd"
+pin_definitions = "pinout.json"
+fabric_params   = "fabric.json"
+cfg_start_byte  = 0x154
+cfg_end_byte    = 0x83117

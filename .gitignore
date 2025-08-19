@@ -1,0 +1,28 @@
+###############################################################################
+# Project Foxtrot – VS Code extension
+###############################################################################
+
+# ── Node / Yarn / npm artefacts ──────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-error.log
+dist/
+out/
+foxtrot-*.vsix
+
+# Keep shared debug configs in Git:
+!.vscode/launch.json
+!.vscode/tasks.json
+
+# ── TypeScript build cache ───────────────────────────────────────────────────
+*.tsbuildinfo
+
+# ── VS Code & JetBrains IDEs ─────────────────────────────────────────────────
+.idea/
+
+# ── OS cruft ─────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Bundled Python wheels (generated) ────────────────────────────────────────
+plugins-bundled/*.whl

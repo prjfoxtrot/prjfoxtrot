@@ -1,0 +1,536 @@
+<!--
+  Bitgen Webview Panel (Foxtrot VSCode)
+  ------------------------------------
+  Presents three tree navigators (EDA Profiles, Fuzzers, FPGA Parts) and a
+  Run toolbar button. Communicates with the VSCode extension via postMessage
+  events and polls for run status.
+
+  Conventions applied:
+    " File header & lang attribute (accessibility)
+    " CSP nonce guard (security)
+    " Strict mode IIFE to avoid accidental globals
+    " Debounced search filtering for performance
+    " ARIA labels, keyboard navigation, accessible colours, outline reset
+    " Safer DOM rendering (no dynamic innerHTML for untrusted data)
+    " Tidied identifiers & numeric separators for readability
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <!-- NOTE: In your extension host, replace __nonce__ with a cryptographic nonce
+       and, ideally, interpolate webview.cspSource into img/style-src if desired. -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'none'; img-src vscode-webview-resource: vscode-resource: data:; script-src 'nonce-__nonce__'; style-src 'unsafe-inline';"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --accent  : #ff7e20;
+      --active  : #2cdd6e;
+      --bgPanel : color-mix(in srgb, var(--vscode-sideBar-background) 75%, var(--vscode-editor-background) 25%);
+      --bgCard  : var(--vscode-sideBar-background);
+      --crumb   : color-mix(in srgb, var(--vscode-editor-foreground) 65%, transparent);
+    }
+
+    body {
+      font-family: var(--vscode-font-family);
+      padding: 8px;
+      background: var(--bgPanel);
+    }
+
+    /* toolbar / Run button */
+    .toolbar {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 8px;
+    }
+
+    #runBtn {
+      padding: 3px 10px;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 12px;
+      background: var(--vscode-button-background);
+      color: var(--vscode-button-foreground);
+    }
+
+    #runBtn:disabled {
+      opacity: .6;
+      cursor: default;
+      background: var(--vscode-button-secondaryBackground);
+    }
+
+    #runBtn.spinning { pointer-events: none; }
+
+    #runBtn.spinning::after {
+      content: "";
+      display: inline-block;
+      margin-left: 6px;
+      width: 10px;
+      height: 10px;
+      border: 2px solid var(--vscode-button-foreground);
+      border-radius: 50%;
+      border-top-color: transparent;
+      border-left-color: transparent;
+      animation: spin 850ms linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (prefers-reduced-motion: reduce) {
+      #runBtn.spinning::after { animation: none; }
+    }
+
+    /* cards / lists */
+    .section {
+      background: var(--bgCard);
+      padding: 6px;
+      border-radius: 4px;
+      box-shadow: 0 1px 1px rgb(0 0 0 / .25);
+      margin-bottom: 10px;
+    }
+
+    h3 {
+      margin: 0 0 6px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .4px;
+    }
+
+    .search {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 3px 6px;
+      margin-bottom: 6px;
+      border-radius: 3px;
+      border: 1px solid var(--vscode-sideBar-border);
+      background: var(--vscode-input-background);
+      color: var(--vscode-input-foreground);
+    }
+
+    .search:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent);
+      outline: none; /* reset default outline to avoid double focus ring */
+    }
+
+    .active-banner {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      padding: 2px 0 2px 3px;
+      margin-bottom: 6px;
+      border-left: 3px solid var(--active);
+    }
+
+    .active-label { white-space: nowrap; }
+    .active-path  {
+      font-size: 11px;
+      color: var(--crumb);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .breadcrumb {
+      font-size: 11px;
+      color: var(--crumb);
+      margin: 0 0 6px;
+      display: flex;
+      gap: 3px;
+      flex-wrap: wrap;
+    }
+
+    .breadcrumb span { cursor: pointer; }
+    .breadcrumb span:hover { text-decoration: underline; }
+
+    .list { outline: none; }
+
+    .item {
+      padding: 3px 6px;
+      cursor: pointer;
+      border-radius: 3px;
+    }
+
+    .item:hover { background: var(--vscode-list-hoverBackground); }
+
+    .item:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 1px;
+    }
+
+    .item.leaf.active {
+      border-left: 3px solid var(--active);
+      padding-left: 3px;
+    }
+
+    /* Visually hidden utility for screen readers */
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="toolbar" role="toolbar" aria-label="Bitgen toolbar">
+    <button id="runBtn" disabled aria-label="Run selected fuzzer" aria-disabled="true" aria-live="off">Run ▶︎</button>
+  </div>
+
+  <div id="edas"    class="section" role="region" aria-labelledby="edas-label"></div>
+  <div id="fuzzers" class="section" role="region" aria-labelledby="fuzzers-label"></div>
+  <div id="parts"   class="section" role="region" aria-labelledby="parts-label"></div>
+
+  <div id="live" class="sr-only" role="status" aria-live="polite"></div>
+
+  <!-- All logic wrapped inside a strict mode IIFE to prevent accidental globals -->
+  <script nonce="__nonce__">
+    (function () {
+      "use strict";
+
+      /** @typedef {{label:string, path:string, children?:TreeNode[]}} TreeNode */
+
+      const POLL_INTERVAL_MS = 1_500;
+      const SEARCH_DEBOUNCE_MS = 150;
+      const TOAST_MS = 4_000;
+
+      const vscode = acquireVsCodeApi();
+      const runBtn = /** @type {HTMLButtonElement} */(document.getElementById("runBtn"));
+      const liveRegion = document.getElementById("live");
+
+      /* toast helper */
+      function toast(msg, ok = true) {
+        const n = document.createElement("div");
+        n.textContent = msg;
+        n.setAttribute("role", "status");
+        n.setAttribute("aria-live", "polite");
+        Object.assign(n.style, {
+          position: "fixed",
+          top: "12px",
+          right: "12px",
+          padding: "6px 12px",
+          borderRadius: "4px",
+          color: "#fff",
+          fontSize: "12px",
+          userSelect: "none",
+          background: ok
+            ? "var(--vscode-testing-iconPassedColor, #2cdd6e)"
+            : "var(--vscode-testing-iconFailedColor, #f14c4c)",
+          boxShadow: "0 1px 4px rgb(0 0 0 / .25)",
+          zIndex: 1000,
+          pointerEvents: "none",
+        });
+        document.body.appendChild(n);
+        setTimeout(() => n.remove(), TOAST_MS);
+        if (liveRegion) liveRegion.textContent = msg;
+      }
+
+      /* polling during runs */
+      let pollTimer = /** @type {number|null} */(null);
+      const startPoll = () => {
+        if (!pollTimer) {
+          pollTimer = window.setInterval(() => vscode.postMessage({ type: "poll" }), POLL_INTERVAL_MS);
+        }
+      };
+      const stopPoll = () => {
+        if (pollTimer) window.clearInterval(pollTimer);
+        pollTimer = null;
+      };
+
+      /* Pause polling when the panel is not visible (saves resources) */
+      document.addEventListener("visibilitychange", () => {
+        if (document.hidden) {
+          stopPoll();
+        } else if (runBtn.classList.contains("spinning")) {
+          startPoll();
+        }
+      });
+
+      /* Tree Navigator factory */
+      /**
+       * Creates an accessible tree-like navigator with search filter.
+       * @param {string} id
+       * @param {string} title
+       * @param {string} placeholder
+       */
+      function Navigator(id, title, placeholder) {
+        const host = /** @type {HTMLElement} */(document.getElementById(id));
+        host.innerHTML = "";
+
+        // Section header
+        const heading = document.createElement("h3");
+        const headingId = `${id}-label`;
+        heading.id = headingId;
+        heading.textContent = title;
+        host.appendChild(heading);
+
+        // Search input
+        const searchInput = document.createElement("input");
+        searchInput.className = "search";
+        searchInput.type = "search";
+        searchInput.placeholder = placeholder;
+        searchInput.setAttribute("aria-label", placeholder);
+        host.appendChild(searchInput);
+
+        // Active banner area
+        const bannerEl = document.createElement("div");
+        bannerEl.className = "banner";
+        host.appendChild(bannerEl);
+
+        // Breadcrumbs
+        const breadcrumbEl = document.createElement("div");
+        breadcrumbEl.className = "breadcrumb";
+        breadcrumbEl.setAttribute("role", "navigation");
+        breadcrumbEl.setAttribute("aria-label", `${title} breadcrumb`);
+        host.appendChild(breadcrumbEl);
+
+        // List container
+        const listEl = document.createElement("div");
+        listEl.className = "list";
+        listEl.setAttribute("role", "list");
+        host.appendChild(listEl);
+
+        /** @type {TreeNode[]} */
+        let root = [];
+        /** @type {Record<string, TreeNode>} */
+        let nodeIndex = {};
+        /** @type {string|null} */
+        let active = null;
+        /** @type {string[]} breadcrumb stack */
+        let breadcrumbStack = [""]; // "" represents root
+
+        function renderBanner() {
+          bannerEl.innerHTML = "";
+          if (!active) return;
+          const node = nodeIndex[active];
+          const label = (node && node.label) ? node.label : active.split("/").pop();
+          const path = active.slice(1, -(label ? label.length + 1 : 1));
+
+          const wrap = document.createElement("div");
+          wrap.className = "active-banner";
+
+          const labelEl = document.createElement("span");
+          labelEl.className = "active-label";
+          labelEl.textContent = label || "";
+
+          const pathEl = document.createElement("span");
+          pathEl.className = "active-path";
+          pathEl.textContent = path;
+
+          wrap.appendChild(labelEl);
+          wrap.appendChild(pathEl);
+          bannerEl.appendChild(wrap);
+        }
+
+        /**
+         * Render a set of nodes into the list using safe DOM APIs.
+         * @param {TreeNode[]} nodes
+         */
+        function renderList(nodes) {
+          listEl.innerHTML = "";
+          const frag = document.createDocumentFragment();
+          for (const n of nodes) {
+            const el = document.createElement("div");
+            el.className = `item${!n.children?.length ? " leaf" : ""}${n.path === active ? " active" : ""}`;
+            el.setAttribute("role", "listitem");
+            el.tabIndex = 0;
+            el.dataset.path = n.path;
+            el.textContent = n.label;
+            frag.appendChild(el);
+          }
+          listEl.appendChild(frag);
+        }
+
+        function showLevel() {
+          const dir = breadcrumbStack.at(-1);
+          const rows = dir === "" ? root : (nodeIndex[dir]?.children || []);
+          renderList(rows);
+
+          breadcrumbEl.innerHTML = "";
+          if (breadcrumbStack.length > 1) {
+            const frag = document.createDocumentFragment();
+            const home = document.createElement("span");
+            home.dataset.idx = "0";
+            home.textContent = "home";
+            frag.appendChild(home);
+            for (let i = 1; i < breadcrumbStack.length; i++) {
+              const seg = breadcrumbStack[i].split("/").pop();
+              const span = document.createElement("span");
+              span.dataset.idx = String(i);
+              span.textContent = ` / ${seg}`;
+              frag.appendChild(span);
+            }
+            breadcrumbEl.appendChild(frag);
+          }
+
+          renderBanner();
+        }
+
+        /** @param {TreeNode[]} nodes */
+        function flatten(nodes) {
+          return nodes.reduce((acc, n) => {
+            acc[n.path] = n;
+            if (n.children) Object.assign(acc, flatten(n.children));
+            return acc;
+          }, /** @type {Record<string, TreeNode>} */ ({}));
+        }
+
+        /**
+         * @param {TreeNode[]} nodes
+         * @param {string} prefix
+         */
+        function annotate(nodes, prefix = "") {
+          return nodes.map((n) => {
+            const full = n.path ?? `${prefix}/${n.label}`;
+            const key = full.startsWith("/") ? full : `/${full}`;
+            return {
+              ...n,
+              path: key,
+              children: n.children ? annotate(n.children, key) : undefined,
+            };
+          });
+        }
+
+        /* search filter (debounced) */
+        const onSearch = () => {
+          const q = searchInput.value.toLowerCase();
+          if (!q) { showLevel(); return; }
+          const rows = Object.values(nodeIndex).filter(
+            (n) => !n.children?.length && n.path.toLowerCase().includes(q)
+          );
+          renderList(rows);
+        };
+
+        // simple debounce
+        function debounce(fn, delay) {
+          let t; return (...args) => { window.clearTimeout(t); t = window.setTimeout(() => fn(...args), delay); };
+        }
+        searchInput.addEventListener("input", debounce(onSearch, SEARCH_DEBOUNCE_MS));
+
+        /* mouse click selection */
+        listEl.addEventListener("click", (e) => {
+          const el = /** @type {HTMLElement|null} */(e.target.closest(".item"));
+          if (!el) return;
+          const node = nodeIndex[el.dataset.path];
+          if (node?.children?.length) {
+            breadcrumbStack.push(node.path);
+            showLevel();
+            return;
+          }
+          listEl.querySelector(".active")?.classList.remove("active");
+          el.classList.add("active");
+          active = node.path;
+          vscode.postMessage({ type: `${id}:select`, value: node.path.slice(1) });
+          breadcrumbStack = [""]; // reset to root
+          showLevel();
+        });
+
+        /* keyboard navigation */
+        listEl.addEventListener("keydown", (e) => {
+          const items = /** @type {HTMLElement[]} */(Array.from(listEl.querySelectorAll(".item")));
+          const current = /** @type {HTMLElement} */(document.activeElement);
+          const idx = items.indexOf(current);
+          if (e.key === "ArrowDown") {
+            e.preventDefault();
+            const next = items[Math.min(items.length - 1, idx + 1)] || items[0];
+            next?.focus();
+          } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            const prev = items[Math.max(0, idx - 1)] || items[0];
+            prev?.focus();
+          } else if (e.key === "Home") {
+            e.preventDefault(); items[0]?.focus();
+          } else if (e.key === "End") {
+            e.preventDefault(); items.at(-1)?.focus();
+          } else if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault(); current?.click();
+          }
+        });
+
+        /* breadcrumb navigation */
+        breadcrumbEl.addEventListener("click", (e) => {
+          const span = /** @type {HTMLElement|null} */(e.target.closest("span"));
+          if (!span) return;
+          breadcrumbStack = breadcrumbStack.slice(0, parseInt(span.dataset.idx, 10) + 1);
+          showLevel();
+        });
+
+        return {
+          /**
+           * Inject fresh data from extension host
+           * @param {TreeNode[]} tree
+           * @param {string | undefined} activePath
+           */
+          setData(tree, activePath) {
+            root = annotate(tree);
+            nodeIndex = flatten(root);
+            active = activePath ? `/${activePath}` : null;
+            showLevel();
+          },
+        };
+      }
+
+      /* create navigators */
+      const edas    = Navigator("edas",    "EDA Profiles", "filter EDAs&");
+      const fuzzers = Navigator("fuzzers", "Fuzzers", "filter fuzzers&");
+      const parts   = Navigator("parts",   "FPGA Parts", "filter parts&");
+
+      /* Run button handling */
+      function setRunState(running, canRun) {
+        runBtn.disabled = running || !canRun;
+        runBtn.setAttribute("aria-disabled", String(runBtn.disabled));
+        runBtn.classList.toggle("spinning", running);
+      }
+
+      runBtn.addEventListener("click", () => {
+        setRunState(true, false);
+        vscode.postMessage({ type: "fuzzer:run" });
+        startPoll();
+      });
+
+      /* message pump from extension host */
+      window.addEventListener("message", (e) => {
+        const d = e.data;
+        if (!d || typeof d !== "object") return;
+
+        if (d.type === "run:started") {
+          setRunState(true, false);
+          startPoll();
+          return;
+        }
+        if (d.type === "run:done") {
+          stopPoll();
+          setRunState(false, true);
+          toast(d.success ? "Foxtrot run finished" : "Foxtrot run failed", !!d.success);
+          return;
+        }
+        if (d.type !== "data") return;
+
+        edas.setData(d.edas || [], d.activeEDAPath);
+        fuzzers.setData(d.fuzzers || [], d.activeFuzzerPath);
+        parts.setData(d.parts || [], d.activePartPath);
+
+        if (d.inProgress) {
+          setRunState(true, false);
+          startPoll();
+        } else {
+          stopPoll();
+          setRunState(false, !!d.canRun);
+        }
+      });
+
+      /* initial handshake */
+      vscode.postMessage({ type: "init" });
+    })();
+  </script>
+</body>
+</html>

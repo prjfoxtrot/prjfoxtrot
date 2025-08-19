@@ -1,0 +1,7 @@
+[part]
+name            = "EPF10K20RC208-3"
+vendor          = "altera"
+pin_definitions = "pinout.json"
+fabric_params   = "fabric.json"
+cfg_start_byte  = 0xA8
+cfg_end_byte    = 0x6E3F

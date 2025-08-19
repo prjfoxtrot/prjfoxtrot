@@ -1,0 +1,73 @@
+// ============================================================================
+//  generic_LUTChain.v   –   N-deep LUT chain (Verilog-2001, chunked INIT)
+//  --------------------------------------------------------------------------
+//  * Each chunk holds CHUNK_LUTS LUTs (≤256 so every INIT chunk <1 Mbit)
+//  * First K LUTs are fed directly from distinct K-bit slices of io_pins
+//  * Every later LUT sees the outputs of the previous K LUTs
+// ============================================================================
+
+{% set N           = params.N            | int %}
+{% set K           = params.K            | int %}
+{% set CHUNK_LUTS  = params.CHUNK_LUTS   | int %}
+{% set CHUNK_COUNT = params.INIT_CHUNKS  | length %}
+{% set LUT_BITS    = 2 ** K              %}
+
+module LUTChain #(
+    parameter integer N            = {{ N }},
+    parameter integer K            = {{ K }},
+    parameter integer CHUNK_LUTS   = {{ CHUNK_LUTS }},
+    parameter integer CHUNK_COUNT  = {{ CHUNK_COUNT }},
+{% for chunk in params.INIT_CHUNKS -%}
+    parameter [{{ chunk.split("'")[0] }}-1:0] INIT_CHUNK_{{ loop.index0 }} = {{ chunk }}{% if not loop.last %},{% endif %}
+{% endfor %}
+    ,
+    // -------- helper (matches top_level.v) --------
+    parameter integer IO_PINS_WIDTH = (N == 1) ? K :
+                                      (N == 2) ? (2*K) :
+                                      (N == 3) ? (3*K) :
+                                      (N == 4) ? (4*K) : (K*K)
+) (
+    input  [IO_PINS_WIDTH-1:0] io_pins,
+    output                     chain_output
+);
+
+    // q[J] = output of LUT J  (0 ≤ J < N)
+    wire [N-1:0] q;
+
+{% for c in range(CHUNK_COUNT) -%}
+    {% set start_idx   = c * CHUNK_LUTS %}
+    {% set chunk_size  = CHUNK_LUTS if N - start_idx > CHUNK_LUTS else N - start_idx %}
+    {% set end_idx     = start_idx + chunk_size - 1 %}
+    // =============================================================
+    //  Chunk {{ c }}   –  LUTs {{ start_idx }} … {{ end_idx }}
+    // =============================================================
+    genvar j_{{ c }};
+    generate
+        for (j_{{ c }} = 0; j_{{ c }} < {{ chunk_size }}; j_{{ c }} = j_{{ c }} + 1)
+        begin : g_chunk_{{ c }}
+            localparam integer J = {{ start_idx }} + j_{{ c }}; // absolute index
+
+            wire [K-1:0] lut_addr;
+
+            // ---------- address construction ----------
+            if (J < K) begin : from_io
+                assign lut_addr = io_pins[K*(J+1)-1 : K*J];
+            end else begin : chained
+                assign lut_addr = q[J-1 : J-K];
+            end
+
+            LUT #(
+                .K   (K),
+                .INIT(INIT_CHUNK_{{ c }}[{{ LUT_BITS }}*j_{{ c }} +: {{ LUT_BITS }}])
+            ) lut_i (
+                .A   (lut_addr),
+                .Out (q[J])
+            );
+        end
+    endgenerate
+{% endfor %}
+
+    // Final chain output
+    assign chain_output = q[N-1];
+
+endmodule

@@ -1,0 +1,5 @@
+[eda]
+plugin          = "vivado_2024"
+tcl_executable  = "/opt/Xilinx/Vivado/2024.2/bin/vivado"
+use_wine        = false
+wine_executable = "/usr/bin/wine"

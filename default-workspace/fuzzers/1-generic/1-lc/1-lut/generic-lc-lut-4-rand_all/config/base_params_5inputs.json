@@ -1,0 +1,56 @@
+{
+    "verilog_parameters": {
+        "N": 8000,
+        "K": 5,
+        "CHUNK_LUTS": 256
+        
+    },
+
+    "pin_mappings": {
+        "chain_output": { "selection_type": "closest", "pin_type": "inout", "x": 0, "y": 0 },
+
+        "io_pins[0]":  { "selection_type": "closest", "pin_type": "inout", "x": 0, "y": 0 },
+        "io_pins[1]":  { "selection_type": "closest", "pin_type": "inout", "x": 0, "y": 0 },
+        "io_pins[2]":  { "selection_type": "closest", "pin_type": "inout", "x": 0, "y": 0 },
+        "io_pins[3]":  { "selection_type": "closest", "pin_type": "inout", "x": 0, "y": 0 },
+        "io_pins[4]":  { "selection_type": "closest", "pin_type": "inout", "x": 0, "y": 0 },
+        "io_pins[5]":  { "selection_type": "closest", "pin_type": "inout", "x": 0, "y": 0 },
+        "io_pins[6]":  { "selection_type": "closest", "pin_type": "inout", "x": 0, "y": 0 },
+        "io_pins[7]":  { "selection_type": "closest", "pin_type": "inout", "x": 0, "y": 0 },
+        "io_pins[8]":  { "selection_type": "closest", "pin_type": "inout", "x": 0, "y": 0 },
+        "io_pins[9]":  { "selection_type": "closest", "pin_type": "inout", "x": 0, "y": 0 },
+
+        "io_pins[10]": { "selection_type": "closest", "pin_type": "inout", "x": 0, "y": 0 },
+        "io_pins[11]": { "selection_type": "closest", "pin_type": "inout", "x": 0, "y": 0 },
+        "io_pins[12]": { "selection_type": "closest", "pin_type": "inout", "x": 0, "y": 0 },
+        "io_pins[13]": { "selection_type": "closest", "pin_type": "inout", "x": 0, "y": 0 },
+        "io_pins[14]": { "selection_type": "closest", "pin_type": "inout", "x": 0, "y": 0 },
+        "io_pins[15]": { "selection_type": "closest", "pin_type": "inout", "x": 0, "y": 0 },
+        "io_pins[16]": { "selection_type": "closest", "pin_type": "inout", "x": 0, "y": 0 },
+        "io_pins[17]": { "selection_type": "closest", "pin_type": "inout", "x": 0, "y": 0 },
+        "io_pins[18]": { "selection_type": "closest", "pin_type": "inout", "x": 0, "y": 0 },
+        "io_pins[19]": { "selection_type": "closest", "pin_type": "inout", "x": 0, "y": 0 },
+
+        "io_pins[20]": { "selection_type": "closest", "pin_type": "inout", "x": 0, "y": 0 },
+        "io_pins[21]": { "selection_type": "closest", "pin_type": "inout", "x": 0, "y": 0 },
+        "io_pins[22]": { "selection_type": "closest", "pin_type": "inout", "x": 0, "y": 0 },
+        "io_pins[23]": { "selection_type": "closest", "pin_type": "inout", "x": 0, "y": 0 },
+        "io_pins[24]": { "selection_type": "closest", "pin_type": "inout", "x": 0, "y": 0 },
+        "io_pins[25]": { "selection_type": "closest", "pin_type": "inout", "x": 0, "y": 0 },
+        "io_pins[26]": { "selection_type": "closest", "pin_type": "inout", "x": 0, "y": 0 },
+        "io_pins[27]": { "selection_type": "closest", "pin_type": "inout", "x": 0, "y": 0 },
+        "io_pins[28]": { "selection_type": "closest", "pin_type": "inout", "x": 0, "y": 0 },
+        "io_pins[29]": { "selection_type": "closest", "pin_type": "inout", "x": 0, "y": 0 },
+
+        "io_pins[30]": { "selection_type": "closest", "pin_type": "inout", "x": 0, "y": 0 },
+        "io_pins[31]": { "selection_type": "closest", "pin_type": "inout", "x": 0, "y": 0 },
+        "io_pins[32]": { "selection_type": "closest", "pin_type": "inout", "x": 0, "y": 0 },
+        "io_pins[33]": { "selection_type": "closest", "pin_type": "inout", "x": 0, "y": 0 }
+    },
+    "location_mappings": {},
+    "design_files": [
+        "base.v",
+        "generic_LUT.v",
+        "generic_LUTChain.v"
+    ]
+}

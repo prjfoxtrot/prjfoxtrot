@@ -1,0 +1,36 @@
+# Tooling / sources / tests / docs
+node_modules/**
+src/**
+test/**
+__tests__/**
+docs/**
+**/*.ts
+**/*.tsx
+**/*.map
+**/tsconfig.json
+tsconfig.tsbuildinfo
+.vscode/**
+.vscode-test/**
+.github/**
+coverage/**
+dist/**
+mkdocs.yml
+.gitignore
+.gitmodules
+
+# Repo meta you don't need on the VSIX page
+vsc-extension-quickstart.md
+
+# Keep compiled output & assets
+!out/**
+!media/**
+!plugins-bundled/**
+
+# Important docs
+!README.md
+!CHANGELOG.md
+!LICENSE
+
+# ---- hard exclude datasets (must be after any re-includes) ----
+default-workspace/**/data/raw/**
+default-workspace/**/raw/**
